@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Courier Rate Calculator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #e2e8f0;
+        }
+    </style>
+</head>
+<body class="bg-gray-200 p-4 sm:p-8">
+    <div class="max-w-4xl mx-auto bg-white rounded-xl shadow-lg p-6 sm:p-10 border border-gray-300">
+        <!-- Aramex SVG Logo -->
+        <div class="flex justify-center mb-6">
+            <svg width="150" height="75" viewBox="0 0 120 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12.9155 12.8275V26.2413H15.6552V12.8275H12.9155Z" fill="#3D89A6"/>
+                <path d="M22.0259 12.8275L18.8103 26.2413H21.5776L24.7931 12.8275H22.0259Z" fill="#3D89A6"/>
+                <path d="M36.1983 26.2413L32.9655 12.8275H35.7328L38.9655 26.2413H36.1983Z" fill="#3D89A6"/>
+                <path d="M40.2328 12.8275L37.0345 26.2413H39.8017L43.0172 12.8275H40.2328Z" fill="#3D89A6"/>
+                <path d="M51.0172 12.8275V26.2413H53.7569V12.8275H51.0172Z" fill="#3D89A6"/>
+                <path d="M60.1276 12.8275L56.9121 26.2413H59.6793L62.8948 12.8275H60.1276Z" fill="#3D89A6"/>
+                <path d="M72.2845 26.2413L69.0517 12.8275H71.819L75.0517 26.2413H72.2845Z" fill="#3D89A6"/>
+                <path d="M76.319 12.8275L73.1207 26.2413H75.8879L79.1034 12.8275H76.319Z" fill="#3D89A6"/>
+                <path d="M87.1034 12.8275V26.2413H89.8431V12.8275H87.1034Z" fill="#3D89A6"/>
+                <path d="M96.2138 12.8275L92.9983 26.2413H95.7655L98.981 12.8275H96.2138Z" fill="#3D89A6"/>
+                <path d="M109.914 12.8275L106.672 26.2413H109.439L112.672 12.8275H109.914Z" fill="#3D89A6"/>
+                <path d="M114.397 12.8275V26.2413H117.136V12.8275H114.397Z" fill="#3D89A6"/>
+                <circle cx="27.8448" cy="22.1897" r="2.75" fill="#C52026"/>
+                <circle cx="46.069" cy="22.1897" r="2.75" fill="#C52026"/>
+                <circle cx="65.3707" cy="22.1897" r="2.75" fill="#C52026"/>
+                <circle cx="81.569" cy="22.1897" r="2.75" fill="#C52026"/>
+                <circle cx="102.664" cy="22.1897" r="2.75" fill="#C52026"/>
+                <circle cx="120.888" cy="22.1897" r="2.75" fill="#C52026"/>
+            </svg>
+        </div>
+        <h1 class="text-3xl sm:text-4xl font-bold text-center text-gray-800 mb-6">Courier Rate Calculator</h1>
+        <p class="text-center text-gray-600 mb-8 text-sm sm:text-base">
+            This tool helps you calculate courier rates based on weight and destination. This version works offline after your first visit.
+        </p>
+
+        <div class="mb-6">
+            <label for="destination" class="block text-gray-700 font-medium mb-2">Destination Country</label>
+            <div class="relative">
+                <input type="text" id="destination" list="countries" placeholder="Type to search..."
+                       class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200">
+                <datalist id="countries"></datalist>
+            </div>
+        </div>
+
+        <div class="mb-8">
+            <label for="weight" class="block text-gray-700 font-medium mb-2">Weight (in kg)</label>
+            <input type="number" id="weight" min="0.5" step="0.5" placeholder="e.g., 2.5"
+                   class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200">
+        </div>
+
+        <button onclick="calculateRate()"
+                class="w-full bg-blue-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors duration-200 focus:outline-none focus:ring-4 focus:ring-blue-500 focus:ring-opacity-50">
+            Calculate Rate
+        </button>
+
+        <div id="result" class="mt-8 p-6 bg-gray-100 rounded-lg border border-gray-300 hidden">
+            <div id="result-text" class="text-center text-lg font-semibold text-gray-800"></div>
+        </div>
+        
+        <div id="error-message" class="mt-4 p-4 bg-red-100 text-red-700 rounded-lg hidden" role="alert"></div>
+
+        <div id="offline-message" class="mt-4 p-4 bg-yellow-100 text-yellow-700 rounded-lg text-sm hidden">
+          <p class="font-bold">Offline Mode Ready!</p>
+          <p>This application is now cached and available for offline use. You can access it even without an internet connection.</p>
+        </div>
+    </div>
+
+    <script>
+        // Use a self-invoking function to avoid global scope pollution
+        (function() {
+            // Data extracted from the provided PDF snippet
+            const rateData = {
+                // Rates per 0.5 kg for first 2 kg
+                'ME1': { base: 745, add: [196, 127, 128], after: { 2.5: 1262, 3: 1397, 3.5: 2079, 4: 2201, 4.5: 2324, 5: 2446, 5.5: 2568 } },
+                'MEZ': { base: 839, add: [111, 224, 234], after: { 2.5: 1408, 3: 1542, 3.5: 1986, 4: 2193, 4.5: 2400, 5: 2606, 5.5: 2792 } },
+                'ME3': { base: 897, add: [95, 135, 135], after: { 2.5: 1262, 3: 1397, 3.5: 2079, 4: 2201, 4.5: 2324, 5: 2446, 5.5: 2568 } },
+                'A': { base: 1047, add: [129, 219, 218], after: { 2.5: 1612, 3: 1746, 3.5: 2200, 4: 2322, 4.5: 2444, 5: 2566, 5.5: 2688 } },
+                'B': { base: 1083, add: [129, 219, 218], after: { 2.5: 1632, 3: 1766, 3.5: 2220, 4: 2342, 4.5: 2464, 5: 2586, 5.5: 2708 } },
+                'C': { base: 1155, add: [144, 246, 245], after: { 2.5: 1761, 3: 1895, 3.5: 2409, 4: 2531, 4.5: 2653, 5: 2775, 5.5: 2897 } },
+                'D': { base: 1215, add: [159, 269, 269], after: { 2.5: 1881, 3: 2015, 3.5: 2529, 4: 2651, 4.5: 2773, 5: 2895, 5.5: 3017 } },
+                'E': { base: 1260, add: [156, 268, 268], after: { 2.5: 1938, 3: 2072, 3.5: 2616, 4: 2738, 4.5: 2860, 5: 2982, 5.5: 3104 } },
+                'F': { base: 1395, add: [175, 298, 297], after: { 2.5: 2167, 3: 2301, 3.5: 2915, 4: 3037, 4.5: 3159, 5: 3281, 5.5: 3403 } },
+                'G': { base: 1475, add: [187, 316, 315], after: { 2.5: 2291, 3: 2425, 3.5: 3054, 4: 3176, 4.5: 3298, 5: 3420, 5.5: 3542 } },
+                'H': { base: 1530, add: [194, 329, 329], after: { 2.5: 2382, 3: 2516, 3.5: 3170, 4: 3292, 4.5: 3414, 5: 3536, 5.5: 3658 } },
+                'I': { base: 1590, add: [201, 342, 342], after: { 2.5: 2478, 3: 2612, 3.5: 3282, 4: 3404, 4.5: 3526, 5: 3648, 5.5: 3770 } },
+                'J': { base: 1680, add: [213, 363, 362], after: { 2.5: 2613, 3: 2747, 3.5: 3450, 4: 3572, 4.5: 3694, 5: 3816, 5.5: 3938 } },
+                'K': { base: 1810, add: [229, 391, 390], after: { 2.5: 2816, 3: 2950, 3.5: 3712, 4: 3834, 4.5: 3956, 5: 4078, 5.5: 4200 } },
+                'L': { base: 1955, add: [247, 423, 422], after: { 2.5: 3047, 3: 3181, 3.5: 4005, 4: 4127, 4.5: 4249, 5: 4371, 5.5: 4493 } },
+                'M': { base: 2025, add: [256, 439, 438], after: { 2.5: 3157, 3: 3291, 3.5: 4130, 4: 4252, 4.5: 4374, 5: 4496, 5.5: 4618 } },
+                'N': { base: 2190, add: [277, 474, 474], after: { 2.5: 3408, 3: 3542, 3.5: 4443, 4: 4565, 4.5: 4687, 5: 4809, 5.5: 4931 } },
+                'O': { base: 2375, add: [301, 513, 513], after: { 2.5: 3699, 3: 3833, 3.5: 4812, 4: 4934, 4.5: 5056, 5: 5178, 5.5: 5300 } }
+            };
+
+            const zoneMap = {
+                'UNITED ARAB EMIRATES': 'ME1',
+                'BAHRAIN': 'MEZ', 'QATAR': 'MEZ', 'OMAN': 'MEZ', 'KUWAIT': 'MEZ',
+                'SAUDI ARABIA': 'ME3',
+                'AFGHANISTAN': 'J', 'ALBANIA': 'K', 'ALGERIA': 'J', 'AMERICAN SAMOA': 'M', 'ANDORRA': 'F',
+                'ANGOLA': 'L', 'ANGUILLA': 'L', 'ANTIGUA AND BARBUDA': 'L', 'ARGENTINA': 'N', 'ARMENIA': 'J',
+                'ARUBA': 'L', 'AUSTRALIA': 'J', 'AUSTRIA': 'E', 'AZERBAIJAN': 'J', 'BAHAMAS': 'L',
+                'BANGLADESH': 'J', 'BARBADOS': 'L', 'BELARUS': 'K', 'BELGIUM': 'E', 'BELIZE': 'L',
+                'BENIN': 'M', 'BERMUDA': 'L', 'BHUTAN': 'J', 'BOLIVIA': 'N', 'BOSNIA AND HERZEGOVINA': 'K',
+                'BOTSWANA': 'L', 'BRAZIL': 'N', 'BRUNEI': 'J', 'BULGARIA': 'K', 'BURKINA FASO': 'M',
+                'BURUNDI': 'M', 'CAMBODIA': 'J', 'CAMEROON': 'M', 'CANADA': 'J', 'CAPE VERDE': 'M',
+                'CAYMAN ISLANDS': 'L', 'CENTRAL AFRICAN REPUBLIC': 'N', 'CHAD': 'N', 'CHILE': 'N',
+                'CHINA': 'I', 'COLOMBIA': 'N', 'COMOROS': 'M', 'CONGO': 'M', 'CROATIA': 'M',
+                'CYPRUS': 'K', 'CZECH REPUBLIC': 'K', 'DEMOCRATIC REPUBLIC OF CONGO': 'M', 'DENMARK': 'F',
+                'DJIBOUTI': 'H', 'EGYPT': 'H', 'EL SALVADOR': 'N', 'EQUATORIAL GUINEA': 'N', 'ERITREA': 'N',
+                'ESTONIA': 'L', 'ETHIOPIA': 'J', 'FAROE ISLANDS': 'L', 'FIJI': 'L', 'FINLAND': 'F',
+                'FRANCE': 'F', 'GABON': 'N', 'GEORGIA': 'K', 'GERMANY': 'E', 'GHANA': 'M',
+                'GIBRALTAR': 'H', 'GREECE': 'E', 'GRENADA': 'L', 'GUADELOUPE': 'L', 'GUAM': 'L',
+                'GUATEMALA': 'N', 'GUERNSEY': 'J', 'GUINEA': 'M', 'GUINEA-BISSAU': 'M', 'GUYANA': 'N',
+                'HAITI': 'N', 'HONDURAS': 'N', 'HONG KONG': 'O', 'HUNGARY': 'K', 'ICELAND': 'L',
+                'INDONESIA': 'J', 'IRELAND': 'E', 'ISRAEL': 'H', 'ITALY': 'E', 'IVORY COAST': 'M',
+                'JAMAICA': 'L', 'JAPAN': 'J', 'JERSEY': 'J', 'JORDAN': 'E', 'KAZAKHSTAN': 'K',
+                'KENYA': 'J', 'KIRIBATI': 'L', 'KOSOVO': 'K', 'KYRGYZSTAN': 'K', 'LAOS': 'K',
+                'LATVIA': 'K', 'LEBANON': 'H', 'LESOTHO': 'L', 'LIBERIA': 'M', 'LIBYA': 'N',
+                'LIECHTENSTEIN': 'F', 'LITHUANIA': 'L', 'LUXEMBOURG': 'E', 'MACAO': 'O', 'MACEDONIA': 'K',
+                'MADAGASCAR': 'M', 'MALAWI': 'J', 'MALAYSIA': 'J', 'MALDIVES': 'J', 'MALI': 'M',
+                'MALTA': 'H', 'MARSHALL ISLANDS': 'L', 'MAURITANIA': 'M', 'MAURITIUS': 'L', 'MEXICO': 'N',
+                'MOLDOVA': 'K', 'MONACO': 'F', 'MONTENEGRO': 'K', 'MONTSERRAT': 'L', 'MOROCCO': 'J',
+                'MOZAMBIQUE': 'J', 'NAMIBIA': 'L', 'NEPAL': 'J', 'NETHERLANDS': 'F', 'NEW CALEDONIA': 'L',
+                'NEW ZEALAND': 'L', 'NICARAGUA': 'N', 'NIGER': 'M', 'NIGERIA': 'K', 'NORWAY': 'L',
+                'PAKISTAN': 'K', 'PALESTINE': 'M', 'PANAMA': 'N', 'PAPUA NEW GUINEA': 'L', 'PARAGUAY': 'N',
+                'PERU': 'N', 'PHILIPPINES': 'J', 'POLAND': 'J', 'PORTUGAL': 'K',
+                'REUNION ISLAND': 'M', 'ROMANIA': 'K', 'RUSSIA': 'M', 'RWANDA': 'M', 'SAMOA': 'L',
+                'SAN MARINO': 'E', 'SENEGAL': 'M', 'SERBIA': 'K', 'SEYCHELLES': 'L', 'SIERRA LEONE': 'N',
+                'SINGAPORE': 'B', 'SLOVAKIA': 'H', 'SLOVENIA': 'K', 'SOLOMON ISLANDS': 'L', 'SOMALILAND': 'J',
+                'SOUTH AFRICA': 'J', 'SOUTH KOREA': 'J', 'SPAIN': 'K', 'SRI LANKA': 'J', 'ST. KITTS AND NEVIS': 'L',
+                'ST. LUCIA': 'L', 'ST. VINCENT AND GRENADINES': 'L', 'SUDAN': 'N', 'SURINAME': 'N', 'SWAZILAND': 'J',
+                'SWEDEN': 'F', 'SWITZERLAND': 'H', 'SYRIA': 'N', 'TAHITI': 'L', 'TAIWAN': 'I',
+                'TANZANIA': 'J', 'THAILAND': 'J', 'TOGO': 'M', 'TONGA': 'L', 'TRINIDAD AND TOBAGO': 'L',
+                'TUNISIA': 'M', 'TURKEY': 'H', 'TURKS AND CAICOS ISLANDS': 'L', 'TUVALU': 'L', 'UGANDA': 'J',
+                'UNITED KINGDOM': 'E', 'UNITED STATES': 'G', 'URUGUAY': 'N', 'UZBEKISTAN': 'K', 'VANUATU': 'L',
+                'VENEZUELA': 'N', 'VIETNAM': 'I', 'YEMEN': 'N', 'ZAMBIA': 'L', 'ZIMBABWE': 'J'
+            };
+
+            const destinations = Object.keys(zoneMap).sort();
+            const countryList = document.getElementById('countries');
+            destinations.forEach(country => {
+                const option = document.createElement('option');
+                option.value = country;
+                countryList.appendChild(option);
+            });
+
+            window.calculateRate = function() {
+                const destinationInput = document.getElementById('destination').value.trim().toUpperCase();
+                const weightInput = parseFloat(document.getElementById('weight').value);
+                const resultDiv = document.getElementById('result');
+                const resultText = document.getElementById('result-text');
+                const errorDiv = document.getElementById('error-message');
+
+                resultDiv.classList.add('hidden');
+                errorDiv.classList.add('hidden');
+
+                if (!destinationInput || isNaN(weightInput) || weightInput <= 0) {
+                    errorDiv.textContent = 'Please enter a valid destination and weight.';
+                    errorDiv.classList.remove('hidden');
+                    return;
+                }
+
+                const zone = zoneMap[destinationInput];
+                if (!zone) {
+                    errorDiv.textContent = 'Sorry, we could not find a zone for that country.';
+                    errorDiv.classList.remove('hidden');
+                    return;
+                }
+                
+                const rates = rateData[zone];
+                let cost = 0;
+
+                if (weightInput <= 0.5) {
+                    cost = rates.base;
+                } else if (weightInput <= 2.0) {
+                    const baseCost = rates.base;
+                    let additionalWeight = weightInput - 0.5;
+                    cost = baseCost;
+                    
+                    if (additionalWeight > 0) {
+                        cost += rates.add[0];
+                    }
+                    if (additionalWeight > 0.5) {
+                        cost += rates.add[1];
+                    }
+                    if (additionalWeight > 1) {
+                        cost += rates.add[2];
+                    }
+                    // For precise half-kg calculations
+                    if (additionalWeight > 1.5) {
+                        cost += rates.add[3];
+                    }
+
+                } else if (weightInput > 2.0 && weightInput <= 5.5) {
+                    const lookupKey = Math.ceil(weightInput / 0.5) * 0.5;
+                    cost = rates.after[lookupKey];
+                    if (cost === undefined) {
+                        errorDiv.textContent = 'Rate not available for this specific weight. Please try a different weight or contact support.';
+                        errorDiv.classList.remove('hidden');
+                        return;
+                    }
+
+                } else if (weightInput > 5.5) {
+                    const rate = 533; // Default rate per kg for weight > 5.5 kg
+                    cost = 5300 + (Math.ceil(weightInput - 5.5) * rate);
+                }
+
+                if (cost > 0) {
+                    resultText.textContent = `Estimated Rate: ₹${cost.toLocaleString('en-IN')}`;
+                    resultDiv.classList.remove('hidden');
+                } else {
+                    errorDiv.textContent = 'Could not calculate rate. Please check your inputs.';
+                    errorDiv.classList.remove('hidden');
+                }
+            }
+        })();
+
+        // Service Worker registration logic to enable offline access
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                const workerCode = `
+                    const CACHE_NAME = 'courier-calculator-v1';
+                    const urlsToCache = [
+                        'index.html', // This file itself
+                        'https://cdn.tailwindcss.com',
+                        'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap',
+                        'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap'
+                    ];
+
+                    self.addEventListener('install', (event) => {
+                        event.waitUntil(
+                            caches.open(CACHE_NAME).then((cache) => {
+                                console.log('[Service Worker] Caching app shell');
+                                // Use 'add' for network-first strategy, addAll for simple caching
+                                // A single-file app can just cache itself
+                                return cache.add('.');
+                            }).catch(e => {
+                                console.error('[Service Worker] Cache install failed', e);
+                            })
+                        );
+                        self.skipWaiting();
+                    });
+
+                    self.addEventListener('activate', (event) => {
+                        console.log('[Service Worker] Activating new service worker.');
+                        const cacheWhitelist = [CACHE_NAME];
+                        event.waitUntil(
+                            caches.keys().then((cacheNames) => {
+                                return Promise.all(
+                                    cacheNames.map((cacheName) => {
+                                        if (cacheWhitelist.indexOf(cacheName) === -1) {
+                                            return caches.delete(cacheName);
+                                        }
+                                    })
+                                );
+                            })
+                        );
+                        return self.clients.claim();
+                    });
+
+                    self.addEventListener('fetch', (event) => {
+                        event.respondWith(
+                            caches.match(event.request).then((response) => {
+                                if (response) {
+                                    return response;
+                                }
+                                return fetch(event.request).then((networkResponse) => {
+                                    return caches.open(CACHE_NAME).then((cache) => {
+                                        // Cache the new response if it's not a navigation request and is a good response
+                                        if (event.request.method === 'GET' && networkResponse.status === 200) {
+                                            cache.put(event.request, networkResponse.clone());
+                                        }
+                                        return networkResponse;
+                                    });
+                                });
+                            }).catch(() => {
+                                // Fallback for when both network and cache fail
+                                return new Response("<h1>Offline</h1><p>You appear to be offline and the requested content is not in the cache.</p>", {
+                                    headers: { 'Content-Type': 'text/html' }
+                                });
+                            })
+                        );
+                    });
+                `;
+
+                const blob = new Blob([workerCode], { type: 'application/javascript' });
+                const workerUrl = URL.createObjectURL(blob);
+
+                navigator.serviceWorker.register(workerUrl, { scope: '.' })
+                    .then(registration => {
+                        console.log('Service Worker registered with scope:', registration.scope);
+                        document.getElementById('offline-message').classList.remove('hidden');
+                    })
+                    .catch(err => {
+                        console.error('Service Worker registration failed:', err);
+                    });
+            });
+        }
+    </script>
+</body>
+</html>
